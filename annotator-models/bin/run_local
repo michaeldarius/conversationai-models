@@ -4,8 +4,11 @@
 # A script to train the kaggle model locally.
 # Assumes that train.csv and test.csv are downloaded into the local_data/
 # directory.
-#!/bin/bash
 
+# Edit these!
+MAX_ITER=50
+TOLERANCE=10 # stopping condition
+LABEL=obscene
 DATE=`date '+%Y%m%d_%H%M%S'`
 
 # the path to the CSV with the rating data
@@ -14,11 +17,15 @@ DATA_PATH=gs://annotator_models/dawid_skene_training_data_100k.csv
 # the path to the CSV with the full comment text
 COMMENT_TEXT_PATH=gs://annotator_models/q42017_comment_text.csv
 
-gcloud ml-engine local train \
+## now loop through the above array
+    echo "Running on $label"
+
+    gcloud ml-engine local train \
      --module-name=trainer.dawid_skene \
      --package-path=trainer -- \
      --data-path=$DATA_PATH \
      --comment-text-path=$COMMENT_TEXT_PATH \
-     --label='obscene' \
+     --label=$LABEL \
      --job-dir='results' \
-     --max-iter=10
+     --max-iter=$MAX_ITER \
+     --tolerance=$TOLERANCE

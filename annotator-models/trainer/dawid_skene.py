@@ -23,7 +23,7 @@ import time
 FLAGS = None
 np.set_printoptions(precision=2)
 
-def run(items, raters, classes, counts, label, tol=1, max_iter=25, init='average'):
+def run(items, raters, classes, counts, label, tol, max_iter, init='average'):
     """
     Run the Dawid-Skene estimator on response data
 
@@ -75,7 +75,7 @@ def run(items, raters, classes, counts, label, tol=1, max_iter=25, init='average
             class_marginals_diff = np.sum(np.abs(class_marginals - old_class_marginals))
             item_class_diff = np.sum(np.abs(item_classes - old_item_classes))
 
-            logging.info('{0}\t{1:.1f}\t{2:.4f}\t\t{3:.2f}\t{4:3.2f}'.format(
+            logging.info('{0}\t{1:.1f}\t{2:.4f}\t\t{3:.2f}\t\t{4:3.2f}'.format(
                 iteration, log_L, class_marginals_diff, item_class_diff, iter_time))
 
             if (class_marginals_diff < tol and item_class_diff < tol) \
@@ -522,8 +522,8 @@ def main(FLAGS):
     # run EM
     start = time.time()
     class_marginals, error_rates, item_classes = run(
-        items_unique, raters_unique, classes_unique, counts, label=label, tol=.1,
-        max_iter=FLAGS.max_iter)
+        items_unique, raters_unique, classes_unique, counts, label=label,
+        tol=FLAGS.tolerance, max_iter=FLAGS.max_iter)
     end = time.time()
     logging.info("training time: {0:.4f} seconds".format(end - start))
 
@@ -536,13 +536,21 @@ def main(FLAGS):
 
     # write predictions and error_rates out as JSON lines
     n = len(df)
-    prediction_path = '{0}/predictions_{1}_{2}.json'.format(FLAGS.job_dir, label, n)
-    error_rates_path = '{0}/error_rates_{1}_{2}.json'.format(FLAGS.job_dir, label, n)
+    # prediction_path = '{0}/predictions_{1}_{2}.json'.format(FLAGS.job_dir, label, n)
+    # error_rates_path = '{0}/error_rates_{1}_{2}.json'.format(FLAGS.job_dir, label, n)
+    # with tf.gfile.Open(prediction_path, 'w') as fileobj:
+    #   df_predictions.to_json(fileobj, lines=True, orient='records')
+
+    # with tf.gfile.Open(error_rates_path, 'w') as fileobj:
+    #   df_error_rates.to_json(fileobj, lines=True, orient='records')
+
+    prediction_path = '{0}/predictions_{1}_{2}.csv'.format(FLAGS.job_dir, label, n)
+    error_rates_path = '{0}/error_rates_{1}_{2}.csv'.format(FLAGS.job_dir, label, n)
     with tf.gfile.Open(prediction_path, 'w') as fileobj:
-      df_predictions.to_json(fileobj, lines=True, orient='records')
+      df_predictions.to_csv(fileobj, encoding='utf-8', index=False)
 
     with tf.gfile.Open(error_rates_path, 'w') as fileobj:
-      df_error_rates.to_json(fileobj, lines=True, orient='records')
+      df_error_rates.to_csv(fileobj, encoding='utf-8', index=False)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -560,6 +568,9 @@ if __name__ == '__main__':
     parser.add_argument('--max-iter',
                         help='The max number of iteration to run.', type=int,
                         default=25)
+    parser.add_argument('--tolerance',
+                        help='Stop training when variables change less than this value.',
+                        type=int, default=1)
 
     FLAGS = parser.parse_args()
 
