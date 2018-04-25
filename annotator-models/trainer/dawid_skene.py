@@ -47,7 +47,7 @@ def run(items, raters, classes, counts, label, tol, max_iter, init='average'):
 
     # create a tiled version of the counts to speed up calculations in the
     # e step
-    counts_tiled = np.stack([counts for a in range(nClasses)], axis=2)
+    #counts_tiled = np.stack([counts for a in range(nClasses)], axis=2)
 
     logging.info('Iter\tlog-likelihood\tdelta-CM\tdelta-Y_hat\tIter Secs')
 
@@ -62,7 +62,7 @@ def run(items, raters, classes, counts, label, tol, max_iter, init='average'):
 
         # E-step - calculate expected item classes given error rates and
         #          class marginals
-        item_classes = e_step(counts_tiled, class_marginals, error_rates)
+        item_classes = e_step_verbose(counts, class_marginals, error_rates)
 
         # check likelihood
         log_L = calc_likelihood(counts, class_marginals, error_rates)
@@ -151,7 +151,8 @@ def m_step(counts, item_classes):
 
     # compute error rates for each rater, each predicted class
     # and each true class
-    error_rates = np.matmul(counts.T, item_classes)
+    alpha = 3
+    error_rates = np.matmul(counts.T, item_classes) + alpha
 
     # reorder axes so its of size [nItems x nClasses x nClasses]
     error_rates = np.einsum('abc->bca', error_rates)
