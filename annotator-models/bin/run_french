@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #
-# A script to train the kaggle model remotely using ml-engine.
+# A script to train the Dawid Skene model on CrowdFlower French data using ml-engine.
 #
 # To run with default hyperparameters from the kaggle-classification directory just enter:
 # './bin/run'
@@ -16,18 +16,19 @@
 # Edit these!
 BUCKET_NAME=annotator_models
 CONFIG=cpu_config.yaml
-declare -a LABELS=("obscene" "sexual_explicit" "threat" "toxic_score" "flirtation" "identity_hate" "insult")
-MAX_ITER=50
+declare -a LABELS=("obscene" "threat" "identity_hate" "insult")
+MAX_ITER=100
 TOLERANCE=10 # stopping condition
-DATA_PATH=gs://annotator_models/dawid_skene_training_data_10mil.csv
+DATASET=french
+DATA_PATH=gs://annotator_models/dawid_skene_training_data_french_2mil.csv
 
 # Note: this must be compatible with cells that have GPUs. us-central1 works.
 # See: https://cloud.google.com/ml-engine/docs/using-gpus
 REGION=us-central1
 DATE=`date '+%Y%m%d_%H%M%S'`
 DATE_DAY_ONLY=`date '+%Y%m%d'`
-OUTPUT_PATH=gs://${BUCKET_NAME}/models/${USER}/${DATE_DAY_ONLY}
-COMMENT_TEXT_PATH=gs://${BUCKET_NAME}/q42017_comment_text.csv
+OUTPUT_PATH=gs://${BUCKET_NAME}/models/${USER}/french/${DATE_DAY_ONLY}
+COMMENT_TEXT_PATH=gs://${BUCKET_NAME}/comment_text_unit_id_french.csv
 
 while getopts :c:h opt; do
 case ${opt} in
@@ -55,7 +56,7 @@ echo "Writing to $OUTPUT_PATH"
 for label in "${LABELS[@]}"
 do
     echo "Running on $label"
-    JOB_NAME=${USER}_dawid_skene_q42017_${label}
+    JOB_NAME=${USER}_dawid_skene_${DATASET}_${label}
 
     gcloud ml-engine jobs submit training ${JOB_NAME}_${DATE} \
 	   --job-dir=${OUTPUT_PATH} \

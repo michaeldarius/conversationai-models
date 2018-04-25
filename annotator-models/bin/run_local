@@ -12,20 +12,19 @@ LABEL=obscene
 DATE=`date '+%Y%m%d_%H%M%S'`
 
 # the path to the CSV with the rating data
-DATA_PATH=gs://annotator_models/dawid_skene_training_data_100k.csv
+#DATA_PATH=gs://annotator_models/dawid_skene_training_data_100k.csv
+DATA_PATH=gs://annotator_models/dawid_skene_training_data_subtypes_kaggle_10k.csv
 
 # the path to the CSV with the full comment text
-COMMENT_TEXT_PATH=gs://annotator_models/q42017_comment_text.csv
+COMMENT_TEXT_PATH=gs://annotator_models/kaggle_subtypes_comment_text.csv
 
 ## now loop through the above array
-    echo "Running on $label"
-
-    gcloud ml-engine local train \
-     --module-name=trainer.dawid_skene \
-     --package-path=trainer -- \
-     --data-path=$DATA_PATH \
-     --comment-text-path=$COMMENT_TEXT_PATH \
-     --label=$LABEL \
-     --job-dir='results' \
-     --max-iter=$MAX_ITER \
-     --tolerance=$TOLERANCE
+gcloud ml-engine local train \
+ --module-name=trainer.dawid_skene \
+ --package-path=trainer -- \
+ --data-path=$DATA_PATH \
+ --comment-text-path=$COMMENT_TEXT_PATH \
+ --label=$LABEL \
+ --job-dir='results' \
+ --max-iter=$MAX_ITER \
+ --tolerance=$TOLERANCE

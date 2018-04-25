@@ -1,0 +1,16 @@
+#!/bin/bash
+
+#declare -a LABELS=("obscene" "threat" "identity_hate" "insult" "sexual_explicit" "flirtation")
+declare -a LABELS=("obscene" "threat" "identity_hate" "insult")
+
+for label in "${LABELS[@]}"
+do
+    prediction_file=gs://annotator_models/models/ericagreene/french/20180424/predictions_${label}_1553442.csv
+    error_rates_file=gs://annotator_models/models/ericagreene/french/20180424/error_rates_${label}_1553442.csv
+
+    prediction_table=conversation-ai-experiments:annotator_models.predictions_${label}_french_smoothed
+    error_rates_table=conversation-ai-experiments:annotator_models.error_rates_${label}_french_smoothed
+
+    bq load --source_format=CSV --autodetect $prediction_table $prediction_file
+    bq load --source_format=CSV --autodetect $error_rates_table $error_rates_file
+done
