@@ -43,7 +43,7 @@ DEFAULT_HPARAMS = tf.contrib.training.HParams(
     learning_rate=0.00005,
     dropout_rate=0.5,
     batch_size=128,
-    epochs=1,
+    epochs=5,
     sequence_length=250,
     embedding_dim=100,
     train_embedding=False,
@@ -66,6 +66,7 @@ class ModelRunner():
 
     self.job_dir = job_dir
     self.model_path = os.path.join(job_dir, 'model.h5')
+    self.prediction_path = os.path.join(job_dir, 'test_scored.csv')
     self.embeddings_path = embeddings_path
     self.log_path = log_path
     self.hparams = hparams
@@ -113,13 +114,23 @@ class ModelRunner():
 
   def predict(self, texts):
     data = self._prep_texts(texts)
-    return self.model.predict(data)
+    predictions = self.model.predict(data)
+
+    # Save the predicted scores and comment_text
+    col_names = [l+'_score' for l in model.labels]
+    df_predictions = pd.concat([pd.DataFrame(predictions, columns=col_names), texts], axis=1)
+
+    with tf.gfile.Open(self.prediction_path, 'w') as f:
+      df_predictions.to_json(f, lines=True, orient='records')
+
+    return predictions
 
   def score_auc(self, data):
     predictions = self.predict(data['comment_text'])
+
     # Get an array where each element is a list of all the labels for the
     # specific instance.
-    labels = np.array(list(zip(*[data[label] for label in self.labels])))
+    labels = np.array(list(zip(*[data[label].round(0) for label in self.labels])))
     individual_auc_scores = metrics.roc_auc_score(labels, predictions, average=None)
     print("Individual AUCs: {}".format(list(zip(self.labels, individual_auc_scores))))
     mean_auc_score = metrics.roc_auc_score(labels, predictions, average='macro')
@@ -183,7 +194,7 @@ if __name__ == '__main__':
   parser.add_argument(
       '--dropout_rate', type=float, default=0.5, help='Dropout rate.')
   parser.add_argument(
-      '--batch_size',  default=64, help='Batch size.')
+      '--batch_size', type=int, default=128, help='Batch size.', )
 
   FLAGS = parser.parse_args()
 
@@ -210,6 +221,7 @@ if __name__ == '__main__':
 
   with tf.gfile.Open(FLAGS.test_path, 'rb') as f:
     test_data = pd.read_csv(f, encoding='utf-8')
+
   model.score_auc(test_data)
 
-  model.predict(['This sentence is benign'])
+  predictions = model.predict(test_data['comment_text'])
